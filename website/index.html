@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Tracker</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    /* Custom CSS styles */
+    body {
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">Calorie Tracker</h1>
+    <form id="mealForm">
+      <div class="form-group">
+        <label for="foodInput">Food:</label>
+        <input type="text" class="form-control" id="foodInput" placeholder="Enter the food you ate" required>
+      </div>
+      <div class="form-group">
+        <label for="caloriesInput">Calories:</label>
+        <input type="number" class="form-control" id="caloriesInput" placeholder="Enter the calories" required>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="addMeal()">Add Meal</button>
+    </form>
+    <hr>
+    <h2>Daily Total Calories: <span id="dailyTotal">0</span></h2>
+    <h2>Monthly Total Calories: <span id="monthlyTotal">0</span></h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Food</th>
+          <th>Calories</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="mealList">
+        <!-- Meals will be dynamically added here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function addMeal() {
+      let food = document.getElementById('foodInput').value;
+      let calories = document.getElementById('caloriesInput').value;
+      
+      fetch('http://127.0.0.1:5000/add_meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({food: food, calories: calories}),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        updateMealList();
+        document.getElementById('foodInput').value = '';
+        document.getElementById('caloriesInput').value = '';
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the meal.');
+      });
+    }
+
+    function updateMealList() {
+      fetch('http://127.0.0.1:5000/get_meals')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        let mealList = '';
+        let dailyTotal = 0;
+        let monthlyTotal = 0;
+        data.meals.forEach(meal => {
+          mealList += `<tr><td>${meal.food}</td><td>${meal.calories}</td><td>${meal.date}</td></tr>`;
+          dailyTotal += meal.calories;
+          if (meal.date.startsWith(new Date().toISOString().slice(0, 7))) {
+            monthlyTotal += meal.calories;
+          }
+        });
+        document.getElementById('mealList').innerHTML = mealList;
+        document.getElementById('dailyTotal').textContent = dailyTotal;
+        document.getElementById('monthlyTotal').textContent = monthlyTotal;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while fetching meal data.');
+      });
+    }
+
+    updateMealList();
+</script>
+
+</body>
+</html>
